@@ -1,0 +1,504 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกาะกลางน้ำ - Island Review & Travel Guide</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Swiper.js for 3D Coverflow -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <!-- Google Fonts Kanit & Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            gold: '#F59E0B',
+                            darkGold: '#D97706',
+                            slate: '#2F4353',
+                            navy: '#1E293B',
+                            bg: '#0F172A',
+                            accent: '#38BDF8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #0B132B;
+            color: #F8FAFC;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Dynamic Blurred Background Style - Requirement 1 */
+        #dynamic-bg {
+            position: fixed;
+            inset: -40px;
+            z-index: -20;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: blur(28px) brightness(0.38);
+            transform: scale(1.1);
+            transition: background-image 0.8s ease-in-out, filter 0.8s ease-in-out;
+        }
+
+        /* Dark Overlay to make content & comments comfortable to read */
+        #bg-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -10;
+            background: radial-gradient(circle at center, rgba(15, 23, 42, 0.5) 0%, rgba(11, 19, 43, 0.88) 100%);
+            backdrop-filter: brightness(0.9);
+        }
+
+        /* Glassmorphism Floating Navbar - Reference Image 2 */
+        .glass-nav {
+            background: rgba(30, 41, 59, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* 3D Coverflow Container - Reference Image 1 */
+        .swiper {
+            width: 100%;
+            padding-top: 30px;
+            padding-bottom: 50px;
+        }
+
+        .swiper-slide {
+            background-position: center;
+            background-size: cover;
+            width: 320px;
+            height: 420px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            overflow: hidden;
+            transition: all 0.4s ease;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+        }
+
+        @media (min-width: 768px) {
+            .swiper-slide {
+                width: 440px;
+                height: 520px;
+            }
+        }
+
+        .swiper-slide-active {
+            border-color: #F59E0B;
+            box-shadow: 0 25px 50px rgba(245, 158, 11, 0.3);
+        }
+
+        .swiper-slide img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Pantip Comment Card - Reference Image 3 Color Palette */
+        .pantip-card {
+            background: rgba(15, 23, 42, 0.75);
+            border-left: 4px solid #F59E0B;
+            backdrop-filter: blur(12px);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .pantip-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gold-btn {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            color: #0F172A;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .gold-btn:hover {
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Dynamic Blurred Background Element (Requirement 1) -->
+    <div id="dynamic-bg" style="background-image: url('{% static "1.png" %}');"></div>
+    <div id="bg-overlay"></div>
+
+    <!-- Messages / Toast -->
+    {% if messages %}
+    <div class="fixed top-24 right-5 z-50 flex flex-col gap-2 max-w-md">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl shadow-2xl flex items-center justify-between gap-3 text-white backdrop-blur-md border border-white/10 {% if message.tags == 'error' %}bg-rose-900/90 border-rose-500/30{% elif message.tags == 'success' %}bg-emerald-900/90 border-emerald-500/30{% else %}bg-amber-900/90 border-amber-500/30{% endif %}">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation text-rose-400{% elif message.tags == 'success' %}fa-circle-check text-emerald-400{% else %}fa-circle-info text-amber-400{% endif %} text-xl"></i>
+                <span class="text-sm font-medium">{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-white/60 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Top Navigation Bar - Reference Image 2 Style -->
+    <header class="sticky top-4 z-40 px-4 md:px-8 max-w-7xl mx-auto w-full">
+        <nav class="glass-nav rounded-full px-6 py-3.5 flex items-center justify-between transition-all duration-300">
+            <!-- Brand Logo -->
+            <a href="{% url 'home' %}" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-brand-gold group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-water text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-lg md:text-xl font-bold text-white tracking-wide">เกาะกลางน้ำ</span>
+                    <span class="text-xs block text-amber-400/80 -mt-1 font-light">Island Review</span>
+                </div>
+            </a>
+
+            <!-- Navigation Links -->
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+                <a href="#gallery" class="hover:text-amber-400 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-images text-xs text-amber-400"></i> แกลเลอรี 3D</a>
+                <a href="#about" class="hover:text-amber-400 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-compass text-xs text-amber-400"></i> จุดไฮไลท์</a>
+                <a href="#reviews" class="hover:text-amber-400 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-comments text-xs text-amber-400"></i> รีวิวความคิดเห็น</a>
+            </div>
+
+            <!-- User Auth Status / Action Button (Image 2 style) -->
+            <div class="flex items-center gap-3">
+                {% if user.is_authenticated %}
+                <div class="flex items-center gap-3 bg-slate-900/80 border border-slate-700/60 rounded-full px-4 py-1.5 shadow-md">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-900 font-bold text-xs">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <span class="text-xs md:text-sm font-medium text-slate-200">{{ user.username }}</span>
+                    <a href="{% url 'logout' %}" class="text-slate-400 hover:text-rose-400 text-xs ml-1 transition-colors" title="ออกจากระบบ">
+                        <i class="fa-solid fa-power-off"></i>
+                    </a>
+                </div>
+                {% else %}
+                <a href="{% url 'login' %}" class="bg-white text-slate-900 font-semibold px-5 py-2 rounded-full text-sm hover:bg-amber-400 hover:shadow-lg hover:shadow-amber-500/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>เข้าสู่ระบบ</span>
+                </a>
+                <a href="{% url 'register' %}" class="hidden sm:inline-flex bg-slate-800/80 border border-amber-500/30 text-amber-400 hover:bg-slate-700/80 font-medium px-4 py-2 rounded-full text-sm transition-all">
+                    สมัครสมาชิก
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Header Title -->
+    <section class="text-center mt-10 px-4">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs md:text-sm font-medium mb-4 backdrop-blur-md">
+            <i class="fa-solid fa-sparkles"></i> สัมผัสเสน่ห์เกาะกลางน้ำ สถานที่ท่องเที่ยวอันเงียบสงบ
+        </div>
+        <h1 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight drop-shadow-md">
+            สำรวจความงาม <span class="gold-gradient-text">เกาะกลางน้ำ</span>
+        </h1>
+        <p class="text-slate-300 max-w-2xl mx-auto mt-3 text-sm md:text-base drop-shadow-sm">
+            เลื่อนชมภาพบรรยากาศ 3D Coverflow พร้อมปรับเปลี่ยนภาพพื้นหลังตามจุดท่องเที่ยวแบบเรียลไทม์
+        </p>
+    </section>
+
+    <!-- 3D Coverflow Carousel Section - Reference Image 1 -->
+    <section id="gallery" class="my-6 relative px-2">
+        <div class="swiper mySwiper max-w-7xl mx-auto">
+            <div class="swiper-wrapper">
+                {% for photo in photos %}
+                <div class="swiper-slide group" 
+                     data-imgsrc="{% static photo.filename %}"
+                     data-title="{{ photo.title }}"
+                     data-subtitle="{{ photo.subtitle }}"
+                     data-category="{{ photo.category }}"
+                     data-rating="{{ photo.rating }}"
+                     data-year="{{ photo.year }}"
+                     data-location="{{ photo.location }}">
+                    <img src="{% static photo.filename %}" alt="{{ photo.title }}" loading="lazy" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+                    <div class="absolute bottom-4 left-4 right-4 text-left">
+                        <span class="text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-md bg-amber-500/80 text-slate-950 mb-2 inline-block">
+                            {{ photo.category }}
+                        </span>
+                        <h3 class="text-lg font-bold text-white leading-snug">{{ photo.title }}</h3>
+                        <p class="text-xs text-slate-300 line-clamp-1 opacity-90">{{ photo.subtitle }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Custom Swiper Navigation -->
+            <div class="flex items-center justify-center gap-6 mt-4 z-10 relative">
+                <button class="swiper-button-prev-custom w-11 h-11 rounded-full bg-slate-900/80 border border-slate-700 text-amber-400 hover:bg-amber-500 hover:text-slate-950 flex items-center justify-center transition-all shadow-lg">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="swiper-pagination-custom text-xs font-semibold tracking-wider text-slate-300 bg-slate-950/80 px-4 py-1.5 rounded-full border border-slate-800 backdrop-blur-md"></div>
+                <button class="swiper-button-next-custom w-11 h-11 rounded-full bg-slate-900/80 border border-slate-700 text-amber-400 hover:bg-amber-500 hover:text-slate-950 flex items-center justify-center transition-all shadow-lg">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Active Photo Details Display (Sub-panel matching Image 1 layout) -->
+        <div class="max-w-2xl mx-auto text-center px-4 -mt-2">
+            <div id="active-photo-panel" class="bg-slate-950/80 border border-slate-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md">
+                <h2 id="active-title" class="text-xl md:text-2xl font-bold text-amber-400 mb-1">ทัศนียภาพเกาะกลางน้ำ</h2>
+                <p id="active-subtitle" class="text-slate-300 text-xs md:text-sm mb-4">บรรยากาศโดยรอบเกาะกลางน้ำ ล้อมรอบด้วยธรรมชาติอันร่มรื่น</p>
+
+                <div class="grid grid-cols-3 gap-3 border-t border-slate-800 pt-4 text-xs">
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">หมวดหมู่</span>
+                        <span id="active-category" class="font-semibold text-slate-200">จุดท่องเที่ยวหลัก</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">สถานที่</span>
+                        <span id="active-location" class="font-semibold text-slate-200">ศูนย์ท่องเที่ยวเกาะกลางน้ำ</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">คะแนนรีวิว</span>
+                        <span id="active-rating" class="font-semibold text-amber-400"><i class="fa-solid fa-star text-amber-400 mr-1"></i>4.9 / 5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pantip-Style Reviews & Comments Section - Reference Image 3 Color Tone -->
+    <section id="reviews" class="my-16 px-4 max-w-5xl mx-auto w-full">
+        <!-- Section Header -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-800/80 pb-5 mb-8 gap-4">
+            <div>
+                <div class="inline-flex items-center gap-2 text-xs font-semibold text-amber-400 uppercase tracking-widest mb-1">
+                    <i class="fa-solid fa-comments"></i> กระทู้รีวิวความคิดเห็น
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
+                    ความคิดเห็นจากนักท่องเที่ยว <span class="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full font-medium">({{ total_comments }} รีวิว)</span>
+                </h2>
+            </div>
+            <p class="text-xs text-slate-400">แบ่งปันประสบการณ์และความประทับใจบนเกาะกลางน้ำ</p>
+        </div>
+
+        <!-- Add Comment Box (Condition: Logged in required!) -->
+        <div class="bg-slate-950/85 border border-slate-800/90 rounded-2xl p-6 shadow-xl mb-10 relative overflow-hidden backdrop-blur-md">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl"></div>
+            
+            <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-amber-400"></i> เขียนความคิดเห็นของคุณ
+            </h3>
+
+            {% if user.is_authenticated %}
+            <form action="{% url 'add_comment' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="photo_title" id="form-photo-title" value="เกาะกลางน้ำ">
+                
+                <div class="flex flex-wrap items-center gap-4 text-sm bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <label class="text-slate-300 font-medium">ให้คะแนนเกาะกลางน้ำ:</label>
+                    <div class="flex items-center gap-2 text-amber-400">
+                        <select name="rating" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white text-sm focus:border-amber-400 focus:outline-none">
+                            <option value="5">⭐⭐⭐⭐⭐ (5/5 ดีเยี่ยมที่สุด)</option>
+                            <option value="4">⭐⭐⭐⭐ (4/5 ดีมาก)</option>
+                            <option value="3">⭐⭐⭐ (3/5 ปานกลาง)</option>
+                            <option value="2">⭐⭐ (2/5 พอใช้)</option>
+                            <option value="1">⭐ (1/5 ควรปรับปรุง)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <textarea name="comment_text" rows="3" required placeholder="แบ่งปันความรู้สึก บรรยากาศ หรือคำแนะนำเกี่ยวกับการเที่ยวชมเกาะกลางน้ำ..." class="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-400 focus:outline-none transition-colors"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-xs text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-check text-emerald-400"></i> แสดงความคิดเห็นในชื่อ <strong class="text-amber-400">{{ user.username }}</strong>
+                    </span>
+                    <button type="submit" class="gold-btn px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg">
+                        <i class="fa-solid fa-paper-plane"></i> ส่งความคิดเห็น
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <!-- Disabled Form Banner for Guests -->
+            <div class="bg-slate-900/80 border border-amber-500/30 rounded-xl p-6 text-center">
+                <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-3 text-xl">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h4 class="text-base font-bold text-white mb-1">ต้องเข้าสู่ระบบก่อนจึงจะสามารถแสดงความคิดเห็นได้</h4>
+                <p class="text-xs text-slate-400 max-w-md mx-auto mb-4">
+                    กรุณาเข้าสู่ระบบด้วยบัญชีของคุณ หรือสมัครสมาชิกใหม่เพื่อร่วมแชร์รีวิวความคิดเห็นเกี่ยวกับเกาะกลางน้ำ
+                </p>
+                <div class="flex items-center justify-center gap-3">
+                    <a href="{% url 'login' %}" class="gold-btn px-6 py-2.5 rounded-xl text-sm font-semibold shadow-lg inline-flex items-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบเพื่อรีวิว
+                    </a>
+                    <a href="{% url 'register' %}" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors">
+                        สมัครสมาชิกใหม่
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Displays Previous ~7 Comments (Pantip Forum Board Style) -->
+        <div class="space-y-4">
+            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4 flex items-center justify-between">
+                <span><i class="fa-solid fa-list-ul text-amber-400 mr-2"></i> ความคิดเห็นล่าสุด (แสดง 7 รายการล่าสุด)</span>
+                <span class="text-xs text-amber-400 font-normal">Pantip Style Board</span>
+            </h3>
+
+            {% if comments %}
+                {% for c in comments %}
+                <div class="pantip-card rounded-2xl p-5 shadow-lg border border-slate-800/90">
+                    <div class="flex items-start justify-between gap-4 mb-3">
+                        <div class="flex items-center gap-3">
+                            <!-- User Avatar Badge -->
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 font-bold flex items-center justify-center text-sm shadow-md">
+                                {{ c.user.username|first|upper }}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-white text-sm md:text-base">{{ c.user.username }}</span>
+                                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">สมาชิกยืนยันแล้ว</span>
+                                </div>
+                                <span class="text-xs text-slate-400 block mt-0.5">
+                                    <i class="fa-regular fa-clock text-[10px] mr-1"></i>{{ c.created_at|date:"d M Y, H:i" }} น.
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Rating Stars -->
+                        <div class="flex items-center gap-1 text-amber-400 text-xs bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= c.rating %}
+                                    <i class="fa-solid fa-star"></i>
+                                {% else %}
+                                    <i class="fa-regular fa-star text-slate-600"></i>
+                                {% endif %}
+                            {% endfor %}
+                            <span class="text-xs font-bold text-slate-300 ml-1">({{ c.rating }}/5)</span>
+                        </div>
+                    </div>
+
+                    <!-- Comment Body -->
+                    <div class="pl-0 md:pl-13">
+                        {% if c.photo_title %}
+                        <div class="inline-flex items-center gap-1.5 text-[11px] text-amber-400/90 bg-amber-500/10 px-2.5 py-1 rounded-md mb-2">
+                            <i class="fa-solid fa-location-dot"></i> รีวิวเกี่ยวกับ: <strong>{{ c.photo_title }}</strong>
+                        </div>
+                        {% endif %}
+                        <p class="text-slate-200 text-sm md:text-base leading-relaxed bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80">
+                            {{ c.comment_text }}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-12 bg-slate-950/70 rounded-2xl border border-slate-800">
+                    <i class="fa-solid fa-comments text-4xl text-slate-600 mb-3"></i>
+                    <p class="text-slate-400 text-sm">ยังไม่มีความคิดเห็นก่อนหน้านี้ ร่วมเป็นคนแรกที่รีวิวเกาะกลางน้ำ!</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-800/80 bg-slate-950/90 py-8 text-center text-xs text-slate-500 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2 text-slate-400 font-medium">
+                <i class="fa-solid fa-water text-amber-400"></i> เว็บไซต์รีวิวเกาะกลางน้ำ © 2026 Island Review
+            </div>
+            <p>ระบบเชื่อมต่อฐานข้อมูล PostgreSQL (Neon Serverless)</p>
+        </div>
+    </footer>
+
+    <!-- Swiper JS Script & Dynamic Background Engine (Requirement 1) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const swiper = new Swiper('.mySwiper', {
+                effect: 'coverflow',
+                grabCursor: true,
+                centeredSlides: true,
+                slidesPerView: 'auto',
+                loop: true,
+                coverflowEffect: {
+                    rotate: 25,
+                    stretch: 0,
+                    depth: 180,
+                    modifier: 1,
+                    slideShadows: true,
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next-custom',
+                    prevEl: '.swiper-button-prev-custom',
+                },
+                pagination: {
+                    el: '.swiper-pagination-custom',
+                    type: 'fraction',
+                },
+                on: {
+                    slideChange: function () {
+                        updateActivePhotoPanel(this);
+                    },
+                    init: function () {
+                        updateActivePhotoPanel(this);
+                    }
+                }
+            });
+
+            function updateActivePhotoPanel(swiperInstance) {
+                const activeSlide = swiperInstance.slides[swiperInstance.activeIndex];
+                if (activeSlide) {
+                    const imgSrc = activeSlide.getAttribute('data-imgsrc') || activeSlide.querySelector('img').src;
+                    const title = activeSlide.getAttribute('data-title') || 'เกาะกลางน้ำ';
+                    const subtitle = activeSlide.getAttribute('data-subtitle') || '';
+                    const category = activeSlide.getAttribute('data-category') || 'จุดท่องเที่ยว';
+                    const rating = activeSlide.getAttribute('data-rating') || '5.0';
+                    const location = activeSlide.getAttribute('data-location') || 'เกาะกลางน้ำ';
+
+                    // Requirement 1: Update Dynamic Blurred Background Image
+                    const dynamicBg = document.getElementById('dynamic-bg');
+                    if (dynamicBg && imgSrc) {
+                        dynamicBg.style.backgroundImage = `url('${imgSrc}')`;
+                    }
+
+                    document.getElementById('active-title').innerText = title;
+                    document.getElementById('active-subtitle').innerText = subtitle;
+                    document.getElementById('active-category').innerText = category;
+                    document.getElementById('active-location').innerText = location;
+                    document.getElementById('active-rating').innerHTML = `<i class="fa-solid fa-star text-amber-400 mr-1"></i>${rating} / 5`;
+                    
+                    const formPhotoInput = document.getElementById('form-photo-title');
+                    if (formPhotoInput) {
+                        formPhotoInput.value = title;
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
