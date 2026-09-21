@@ -1,7 +1,8 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
 from reviews import views
 
 urlpatterns = [
@@ -15,6 +16,8 @@ urlpatterns = [
     path('review/<int:review_id>/like/', views.toggle_like_view, name='toggle_like'),
     path('review/<int:review_id>/reply/', views.add_reply_view, name='add_reply'),
     path('review/<int:review_id>/delete/', views.delete_review_view, name='delete_review'),
+    # Fallback in case Vercel forwards raw entrypoint path
+    re_path(r'^api(/index(\.py)?)?/?$', lambda req: redirect('home')),
 ]
 
 if settings.DEBUG and hasattr(settings, 'STATIC_ROOT') and settings.STATIC_ROOT:
