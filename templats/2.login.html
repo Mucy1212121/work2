@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เข้าสู่ระบบ - เกาะกลางน้ำ Island Review</title>
+    <title>เข้าสู่ระบบ - Review</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -126,7 +126,7 @@
                     <i class="fa-solid fa-water"></i>
                 </div>
                 <h1 class="text-2xl font-bold text-white tracking-wide">เข้าสู่ระบบ</h1>
-                <p class="text-xs text-slate-400 mt-1">เกาะกลางน้ำ Island Review</p>
+                <p class="text-xs text-slate-400 mt-1">App Review</p>
             </div>
 
             <!-- Error Notification Banner -->
@@ -177,7 +177,8 @@
             </div>
 
             <!-- Login Form -->
-            <form action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" method="POST" class="space-y-5">
+            <form action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}"
+                method="POST" class="space-y-5">
                 {% csrf_token %}
                 {% if request.GET.next %}
                 <input type="hidden" name="next" value="{{ request.GET.next }}">

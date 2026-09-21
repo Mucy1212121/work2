@@ -1,5 +1,7 @@
 import base64
 import json
+import random
+import string
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
@@ -8,6 +10,24 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count
 from .models import Place, ReviewComment, ReviewLike, ReviewReply
+
+# คำนำหน้าสุ่มสำหรับผู้ใช้ Google
+_RANDOM_PREFIXES = [
+    'นักเดินทาง', 'นักท่องเที่ยว', 'นักผจญภัย', 'คนชอบเที่ยว',
+    'นักสำรวจ', 'นักรีวิว', 'ผู้เดินทาง', 'นักพักผ่อน',
+    'Traveler', 'Explorer', 'Wanderer', 'Adventurer',
+]
+
+def _generate_random_username():
+    """สร้าง username แบบสุ่มที่ไม่ซ้ำกับในระบบ"""
+    for _ in range(20):
+        prefix = random.choice(_RANDOM_PREFIXES)
+        suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+        candidate = f"{prefix}_{suffix}"
+        if not User.objects.filter(username=candidate).exists():
+            return candidate
+    # fallback ถ้าชนกันทุกครั้ง
+    return f"User_{''.join(random.choices(string.digits, k=8))}"
 
 def home_view(request):
     search_query = request.GET.get('search', '').strip()
@@ -279,40 +299,33 @@ def google_login_view(request):
         if not email:
             if username and '@' in username:
                 email = username
-                username = username.split('@')[0]
             elif username:
                 email = f"{username}@gmail.com"
             else:
                 email = "manggomny@gmail.com"
-                username = "manggomny"
 
-        if not username:
-            username = email.split('@')[0] if '@' in email else email
-
-        username = username.replace(' ', '_')
-
-        # Check existing user by username or email in Neon DB
-        user = User.objects.filter(username__iexact=username).first()
-        if not user:
-            user = User.objects.filter(email__iexact=email).first()
+        # ค้นหาผู้ใช้เดิมจาก email (ไม่ค้นจาก username เพื่อกันชน email)
+        user = User.objects.filter(email__iexact=email).first()
 
         if not user:
+            # ผู้ใช้ใหม่ → สร้างชื่อสุ่ม
+            random_username = _generate_random_username()
             user = User.objects.create_user(
-                username=username,
+                username=random_username,
                 email=email,
-                password=f"Google_{username}_Secured2026!"
+                password=f"Google_Secured2026!"
             )
             if name:
                 user.first_name = name
                 user.save()
         else:
-            # Ensure email is updated & saved in Django DB
+            # ผู้ใช้เก่า → อัปเดต email ถ้าเปลี่ยน (ชื่อยังคงเดิม)
             if user.email != email:
                 user.email = email
                 user.save()
 
         login(request, user)
-        messages.success(request, f'เข้าสู่ระบบด้วย Google ({user.email}) สำเร็จ! ยินดีต้อนรับ คุณ {user.username}')
+        messages.success(request, f'เข้าสู่ระบบด้วย Google สำเร็จ! ยินดีต้อนรับ คุณ {user.username}')
         return redirect('home')
 
     # If GET request, render google_callback.html which parses hash parameters and automatically POSTs
