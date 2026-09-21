@@ -17,5 +17,5 @@ urlpatterns = [
     path('review/<int:review_id>/delete/', views.delete_review_view, name='delete_review'),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+if settings.DEBUG and hasattr(settings, 'STATIC_ROOT') and settings.STATIC_ROOT:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
