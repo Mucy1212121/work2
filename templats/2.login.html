@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <!-- Google Font Prompt -->
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -35,7 +36,7 @@
             font-family: 'Prompt', sans-serif;
             background-color: #0F172A;
             color: #F8FAFC;
-            background-image: 
+            background-image:
                 radial-gradient(at 10% 20%, rgba(56, 189, 248, 0.12) 0px, transparent 40%),
                 radial-gradient(at 90% 80%, rgba(245, 158, 11, 0.12) 0px, transparent 40%);
             min-height: 100vh;
@@ -68,28 +69,34 @@
             font-family: 'Roboto', sans-serif;
             font-weight: 500;
             transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
         }
+
         .google-btn:hover {
             background: #f8f9fa;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         #google-loading {
             display: none;
         }
+
         #google-loading.show {
             display: flex;
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
+
         .spinner {
             animation: spin 0.8s linear infinite;
         }
     </style>
 </head>
+
 <body class="flex items-center justify-center min-h-screen p-4">
 
     <!-- Hidden Form for Google JWT Credential Login -->
@@ -104,7 +111,8 @@
     <div class="w-full max-w-md">
         <!-- Top Back Link -->
         <div class="mb-6">
-            <a href="{% url 'home' %}" class="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-amber-400 transition-colors">
+            <a href="{% url 'home' %}"
+                class="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-amber-400 transition-colors">
                 <i class="fa-solid fa-arrow-left"></i> ย้อนกลับไปหน้าแรก
             </a>
         </div>
@@ -113,7 +121,8 @@
         <div class="glass-card rounded-3xl p-8 relative overflow-hidden">
             <!-- Header Brand -->
             <div class="text-center mb-8">
-                <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-3 text-amber-400 text-2xl shadow-inner">
+                <div
+                    class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-3 text-amber-400 text-2xl shadow-inner">
                     <i class="fa-solid fa-water"></i>
                 </div>
                 <h1 class="text-2xl font-bold text-white tracking-wide">เข้าสู่ระบบ</h1>
@@ -122,7 +131,8 @@
 
             <!-- Error Notification Banner -->
             {% if error_message %}
-            <div class="mb-6 p-4 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-200 text-xs flex items-start gap-3">
+            <div
+                class="mb-6 p-4 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-200 text-xs flex items-start gap-3">
                 <i class="fa-solid fa-circle-exclamation text-rose-400 text-base mt-0.5"></i>
                 <div>
                     <strong class="block font-semibold">เข้าสู่ระบบไม่สำเร็จ</strong>
@@ -133,21 +143,28 @@
 
             <!-- Google Sign-In Button -->
             <div class="mb-6" id="google-btn-container">
-                <button type="button" id="google-signin-btn" onclick="startGoogleLogin()" 
+                <button type="button" id="google-signin-btn" onclick="startGoogleLogin()"
                     class="google-btn w-full font-semibold py-3 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-3 cursor-pointer">
                     <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
-                        <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
-                        <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-                        <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9c-.4-.7-.6-1.5-.6-2.3z"/>
-                        <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+                        <path fill="#EA4335"
+                            d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
+                        <path fill="#4285F4"
+                            d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" />
+                        <path fill="#FBBC05"
+                            d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9c-.4-.7-.6-1.5-.6-2.3z" />
+                        <path fill="#34A853"
+                            d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z" />
                     </svg>
                     <span>เข้าสู่ระบบด้วย Google</span>
                 </button>
                 <!-- Loading state -->
                 <div id="google-loading" class="items-center justify-center gap-2 py-3 text-slate-400 text-sm">
-                    <svg class="spinner w-4 h-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    <svg class="spinner w-4 h-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
+                        </path>
                     </svg>
                     <span>กำลังเชื่อมต่อ Google...</span>
                 </div>
@@ -155,23 +172,26 @@
 
             <div class="relative flex items-center justify-center mb-6">
                 <div class="border-t border-slate-800 w-full"></div>
-                <span class="bg-slate-900 px-3 text-[11px] text-slate-500 uppercase tracking-widest absolute">หรือใช้บัญชีผู้ใช้</span>
+                <span
+                    class="bg-slate-900 px-3 text-[11px] text-slate-500 uppercase tracking-widest absolute">หรือใช้บัญชีผู้ใช้</span>
             </div>
 
             <!-- Login Form -->
             <form action="{% url 'login' %}" method="POST" class="space-y-5">
                 {% csrf_token %}
-                
+
                 <!-- Username Input -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                         ชื่อผู้ใช้ (Username)
                     </label>
                     <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                        <div
+                            class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                             <i class="fa-solid fa-user text-sm"></i>
                         </div>
-                        <input type="text" name="username" required placeholder="กรอกชื่อผู้ใช้ของคุณ" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-400 focus:outline-none transition-colors">
+                        <input type="text" name="username" required placeholder="กรอกชื่อผู้ใช้ของคุณ"
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-400 focus:outline-none transition-colors">
                     </div>
                 </div>
 
@@ -184,18 +204,23 @@
                         <span class="text-[11px] text-amber-400/90 font-medium">กดปุ่มตาเพื่อดูรหัสผ่าน</span>
                     </div>
                     <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                        <div
+                            class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                             <i class="fa-solid fa-lock text-sm"></i>
                         </div>
-                        <input type="password" id="password-input" name="password" required placeholder="กรอกรหัสผ่าน" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-12 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-400 focus:outline-none transition-colors">
-                        <button type="button" onclick="togglePasswordVisibility('password-input', 'toggle-eye-icon')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-amber-400 transition-colors focus:outline-none" title="คลิกเพื่อดูรหัสผ่าน">
+                        <input type="password" id="password-input" name="password" required placeholder="กรอกรหัสผ่าน"
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-12 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-400 focus:outline-none transition-colors">
+                        <button type="button" onclick="togglePasswordVisibility('password-input', 'toggle-eye-icon')"
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-amber-400 transition-colors focus:outline-none"
+                            title="คลิกเพื่อดูรหัสผ่าน">
                             <i id="toggle-eye-icon" class="fa-solid fa-eye-slash text-sm"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" class="gold-btn w-full py-3.5 rounded-xl text-sm font-bold shadow-lg flex items-center justify-center gap-2 mt-2">
+                <button type="submit"
+                    class="gold-btn w-full py-3.5 rounded-xl text-sm font-bold shadow-lg flex items-center justify-center gap-2 mt-2">
                     <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ
                 </button>
             </form>
@@ -203,7 +228,7 @@
             <!-- Register Link -->
             <div class="text-center mt-6 pt-6 border-t border-slate-800/80">
                 <p class="text-xs text-slate-400">
-                    ยังไม่มีบัญชีสมาชิก? 
+                    ยังไม่มีบัญชีสมาชิก?
                     <a href="{% url 'register' %}" class="text-amber-400 font-semibold hover:underline ml-1">
                         สมัครสมาชิกใหม่ที่นี่
                     </a>
@@ -253,7 +278,7 @@
                     cancel_on_tap_outside: true,
                     context: 'signin'
                 });
-                google.accounts.id.prompt(function(notification) {
+                google.accounts.id.prompt(function (notification) {
                     if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
                         // GSI One Tap not available, fallback to redirect OAuth
                         fallbackToRedirectOAuth();
@@ -295,7 +320,7 @@
         }
 
         // Check for OAuth token in URL hash (from implicit flow redirect)
-        window.addEventListener('load', function() {
+        window.addEventListener('load', function () {
             const hash = window.location.hash;
             if (hash && hash.includes('access_token')) {
                 const params = new URLSearchParams(hash.substring(1));
@@ -305,20 +330,21 @@
                     fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                         headers: { 'Authorization': 'Bearer ' + accessToken }
                     })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.email) {
-                            document.getElementById('g-form-email').value = data.email;
-                            document.getElementById('g-form-username').value = data.name || data.email.split('@')[0];
-                            document.getElementById('google-auth-form').submit();
-                        }
-                    })
-                    .catch(() => {
-                        resetGoogleBtn();
-                    });
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.email) {
+                                document.getElementById('g-form-email').value = data.email;
+                                document.getElementById('g-form-username').value = data.name || data.email.split('@')[0];
+                                document.getElementById('google-auth-form').submit();
+                            }
+                        })
+                        .catch(() => {
+                            resetGoogleBtn();
+                        });
                 }
             }
         });
     </script>
 </body>
+
 </html>
