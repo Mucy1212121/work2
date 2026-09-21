@@ -9,55 +9,24 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count
 from .models import Place, ReviewComment, ReviewLike, ReviewReply
 
-def get_photos_list():
-    places = Place.objects.all()
-    if places.exists():
-        return [
-            {
-                "id": p.id,
-                "filename": p.image if p.image else "1.png",
-                "title": p.name,
-                "subtitle": p.highlight or (p.description[:60] + "..." if p.description else ""),
-                "category": p.category or "สถานที่ท่องเที่ยว",
-                "rating": "4.9",
-                "year": "2026",
-                "location": p.address or p.name,
-                "latitude": p.latitude,
-                "longitude": p.longitude,
-                "description": p.description or "",
-                "opening_hours": p.opening_hours or "เปิดให้บริการทุกวัน",
-            }
-            for p in places
-        ]
-    return []
-
 def home_view(request):
     search_query = request.GET.get('search', '').strip()
-    category_filter = request.GET.get('category', '').strip()
     
-    # Query all places ONCE and reuse (annotate review count to avoid N+1)
-    places = list(Place.objects.annotate(reviews_count=Count('reviews')).order_by('name'))
-    
-    # Query reviews and order by latest
-    reviews_qs = ReviewComment.objects.select_related('user', 'place').prefetch_related(
+    # Query reviews and order by latest (select_related user to prevent N+1)
+    reviews_qs = ReviewComment.objects.select_related('user').prefetch_related(
         'likes', 'replies__user'
-    ).defer('image', 'image2', 'image3', 'image4')  # defer large base64 fields initially
+    ).defer('image', 'image2', 'image3', 'image4')
     
     if search_query:
         reviews_qs = reviews_qs.filter(
             Q(photo_title__icontains=search_query) |
-            Q(comment_text__icontains=search_query) |
-            Q(category__icontains=search_query) |
-            Q(place__name__icontains=search_query)
+            Q(comment_text__icontains=search_query)
         )
         
-    if category_filter and category_filter != 'ทั้งหมด':
-        reviews_qs = reviews_qs.filter(category=category_filter)
-        
-    # Order strictly by latest, limit to 30 most recent for performance
-    reviews_qs = reviews_qs.order_by('-created_at')[:50]
+    # Limit to latest 40 reviews for blazing speed
+    reviews_qs = list(reviews_qs.order_by('-created_at')[:40])
     
-    # Fetch images only for the reviews we need (avoid loading all base64)
+    # Fetch image fields only for the displayed reviews
     review_ids = [r.id for r in reviews_qs]
     images_map = {
         r['id']: r for r in ReviewComment.objects.filter(id__in=review_ids).values(
@@ -65,7 +34,7 @@ def home_view(request):
         )
     }
 
-    # Prepare reviews with user like status
+    # Prepare review list with user like status
     reviews_list = []
     user_id = request.user.id if request.user.is_authenticated else None
     
@@ -74,7 +43,7 @@ def home_view(request):
         if user_id:
             user_has_liked = any(like.user_id == user_id for like in r.likes.all())
         
-        # Attach image data back
+        # Attach image data
         img_data = images_map.get(r.id, {})
         r.image = img_data.get('image')
         r.image2 = img_data.get('image2')
@@ -88,68 +57,15 @@ def home_view(request):
             'replies': r.replies.all(),
             'replies_count': r.replies.count(),
         })
-
-    # Prepare places JSON for Google Maps — exclude large base64 images
-    places_json = [
-        {
-            "id": p.id,
-            "name": p.name,
-            "category": p.category or "สถานที่ท่องเที่ยว",
-            "latitude": p.latitude,
-            "longitude": p.longitude,
-            "address": p.address or p.name,
-            "opening_hours": p.opening_hours or "เปิดให้บริการทุกวัน",
-            "highlight": p.highlight or "",
-            "description": (p.description or "")[:120],
-            "reviews_count": p.reviews_count
-        }
-        for p in places
-    ]
     
-    # Reuse places queryset for photos list (avoid duplicate DB call)
-    photos = [
-        {
-            "id": p.id,
-            "filename": p.image if p.image else "1.png",
-            "title": p.name,
-            "subtitle": p.highlight or ((p.description[:60] + "...") if p.description else ""),
-            "category": p.category or "สถานที่ท่องเที่ยว",
-            "rating": "4.9",
-            "year": "2026",
-            "location": p.address or p.name,
-            "latitude": p.latitude,
-            "longitude": p.longitude,
-            "description": p.description or "",
-            "opening_hours": p.opening_hours or "เปิดให้บริการทุกวัน",
-        }
-        for p in places
-    ]
-    
-    # Derive categories from both places and reviews (single query each)
-    place_cats = list(Place.objects.exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).distinct())
-    review_cats = list(ReviewComment.objects.exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).distinct())
-    all_cats = []
-    for c in place_cats + review_cats:
-        c_clean = c.strip() if c else ''
-        if c_clean and c_clean not in all_cats:
-            all_cats.append(c_clean)
-            
-    categories = ['ทั้งหมด'] + all_cats
-    
-    # Use aggregate COUNT instead of separate queries
     total_comments = ReviewComment.objects.count()
     total_likes = ReviewLike.objects.count()
     
     context = {
-        'photos': photos,
-        'places': places,
-        'places_json': json.dumps(places_json, ensure_ascii=False),
         'reviews': reviews_list,
         'total_comments': total_comments,
         'total_likes': total_likes,
         'search_query': search_query,
-        'category_filter': category_filter,
-        'categories': categories,
     }
     return render(request, '1.home.html', context)
 
@@ -241,16 +157,13 @@ def add_comment_view(request):
         
         comment_text = request.POST.get('comment_text', '').strip()
         rating = request.POST.get('rating', 5)
-        place_id = request.POST.get('place_id', '').strip()
-        new_place_name = request.POST.get('new_place_name', '').strip()
-        new_category = request.POST.get('new_category', '').strip()
-        new_lat = request.POST.get('new_lat', '').strip()
-        new_lng = request.POST.get('new_lng', '').strip()
+        user_lat_val = request.POST.get('user_lat', '').strip()
+        user_lng_val = request.POST.get('user_lng', '').strip()
+        share_location = request.POST.get('share_location', '').strip()
         image_data = request.POST.get('image', '').strip()
         image2_data = request.POST.get('image2', '').strip()
         image3_data = request.POST.get('image3', '').strip()
         image4_data = request.POST.get('image4', '').strip()
-        share_location = request.POST.get('share_location', '').strip()
         
         try:
             rating = int(rating)
@@ -259,64 +172,31 @@ def add_comment_view(request):
         except ValueError:
             rating = 5
             
-        place = None
-        photo_title = 'สถานที่ท่องเที่ยว'
-        cat = 'สถานที่ท่องเที่ยว'
-        lat = 13.7563
-        lng = 100.5018
-
-        if share_location == 'true':
-            photo_title = 'เช็คอินล่าสุดของฉัน'
-            cat = 'ที่อยู่ปัจจุบัน'
+        lat = None
+        lng = None
+        if user_lat_val and user_lng_val:
             try:
-                lat = float(request.POST.get('user_lat', ''))
-                lng = float(request.POST.get('user_lng', ''))
+                lat = float(user_lat_val)
+                lng = float(user_lng_val)
             except ValueError:
-                pass
-        elif new_place_name:
-            # User is creating/reviewing a new place
-            photo_title = new_place_name
-            cat = new_category if new_category else 'สถานที่ท่องเที่ยว'
-            try:
-                lat = float(new_lat) if new_lat else 13.7563
-                lng = float(new_lng) if new_lng else 100.5018
-            except ValueError:
-                lat, lng = 13.7563, 100.5018
-                
-            place = Place.objects.filter(name__iexact=new_place_name).first()
-            if not place:
-                place = Place.objects.create(
-                    name=new_place_name,
-                    category=cat,
-                    latitude=lat,
-                    longitude=lng,
-                    image=image_data if image_data else "/static/1.png",
-                    description=comment_text[:120] if comment_text else new_place_name
-                )
-        elif place_id and place_id != 'new':
-            place = Place.objects.filter(id=place_id).first()
-            if place:
-                photo_title = place.name
-                lat = place.latitude
-                lng = place.longitude
-                cat = place.category
+                lat = None
+                lng = None
                 
         if comment_text or image_data:
             ReviewComment.objects.create(
                 user=request.user,
-                place=place,
-                photo_title=photo_title,
-                category=cat,
+                photo_title='โพสต์รีวิว',
+                category='รีวิวทั่วไป' if not (lat and lng) else 'แชร์พิกัด',
                 comment_text=comment_text,
                 rating=rating,
                 image=image_data if image_data else None,
                 image2=image2_data if image2_data else None,
                 image3=image3_data if image3_data else None,
                 image4=image4_data if image4_data else None,
-                latitude=lat,
-                longitude=lng
+                latitude=lat if lat is not None else 0,
+                longitude=lng if lng is not None else 0
             )
-            messages.success(request, f'ขอบคุณสำหรับรีวิว "{photo_title}" ของคุณ!')
+            messages.success(request, 'โพสต์รีวิวของคุณสำเร็จแล้ว!')
         else:
             messages.warning(request, 'กรุณากรอกข้อความแสดงความคิดเห็นหรือแนบรูปภาพ')
             
