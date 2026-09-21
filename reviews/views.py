@@ -215,7 +215,9 @@ def login_view(request):
         if user is not None:
             login(request, user)
             messages.success(request, f'ยินดีต้อนรับกลับ คุณ {user.username}!')
-            next_url = request.GET.get('next', 'home')
+            next_url = request.POST.get('next') or request.GET.get('next', '')
+            if not next_url or not next_url.startswith('/'):
+                next_url = 'home'
             return redirect(next_url)
         else:
             error_message = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'

@@ -177,8 +177,11 @@
             </div>
 
             <!-- Login Form -->
-            <form action="{% url 'login' %}" method="POST" class="space-y-5">
+            <form action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" method="POST" class="space-y-5">
                 {% csrf_token %}
+                {% if request.GET.next %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+                {% endif %}
 
                 <!-- Username Input -->
                 <div>
