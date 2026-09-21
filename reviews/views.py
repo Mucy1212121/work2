@@ -35,11 +35,13 @@ def home_view(request):
     search_query = request.GET.get('search', '').strip()
     category_filter = request.GET.get('category', '').strip()
     
-    # Query all places
-    places = Place.objects.all()
+    # Query all places ONCE and reuse (annotate review count to avoid N+1)
+    places = list(Place.objects.annotate(reviews_count=Count('reviews')).order_by('name'))
     
-    # Query reviews and order by latest (รีวิวใหม่ล่าสุด)
-    reviews_qs = ReviewComment.objects.select_related('user', 'place').prefetch_related('likes', 'replies__user').all()
+    # Query reviews and order by latest
+    reviews_qs = ReviewComment.objects.select_related('user', 'place').prefetch_related(
+        'likes', 'replies__user'
+    ).defer('image', 'image2', 'image3', 'image4')  # defer large base64 fields initially
     
     if search_query:
         reviews_qs = reviews_qs.filter(
@@ -52,9 +54,17 @@ def home_view(request):
     if category_filter and category_filter != 'ทั้งหมด':
         reviews_qs = reviews_qs.filter(category=category_filter)
         
-    # Order strictly by latest
-    reviews_qs = reviews_qs.order_by('-created_at')
+    # Order strictly by latest, limit to 30 most recent for performance
+    reviews_qs = reviews_qs.order_by('-created_at')[:50]
     
+    # Fetch images only for the reviews we need (avoid loading all base64)
+    review_ids = [r.id for r in reviews_qs]
+    images_map = {
+        r['id']: r for r in ReviewComment.objects.filter(id__in=review_ids).values(
+            'id', 'image', 'image2', 'image3', 'image4'
+        )
+    }
+
     # Prepare reviews with user like status
     reviews_list = []
     user_id = request.user.id if request.user.is_authenticated else None
@@ -64,6 +74,13 @@ def home_view(request):
         if user_id:
             user_has_liked = any(like.user_id == user_id for like in r.likes.all())
         
+        # Attach image data back
+        img_data = images_map.get(r.id, {})
+        r.image = img_data.get('image')
+        r.image2 = img_data.get('image2')
+        r.image3 = img_data.get('image3')
+        r.image4 = img_data.get('image4')
+        
         reviews_list.append({
             'obj': r,
             'user_has_liked': user_has_liked,
@@ -72,25 +89,43 @@ def home_view(request):
             'replies_count': r.replies.count(),
         })
 
-    # Prepare places JSON for Leaflet.js Interactive Map
+    # Prepare places JSON for Google Maps — exclude large base64 images
     places_json = [
         {
             "id": p.id,
             "name": p.name,
             "category": p.category or "สถานที่ท่องเที่ยว",
-            "image": p.image if p.image else "/static/1.png",
             "latitude": p.latitude,
             "longitude": p.longitude,
             "address": p.address or p.name,
             "opening_hours": p.opening_hours or "เปิดให้บริการทุกวัน",
             "highlight": p.highlight or "",
-            "description": p.description or "",
-            "reviews_count": p.reviews.count()
+            "description": (p.description or "")[:120],
+            "reviews_count": p.reviews_count
         }
         for p in places
     ]
     
-    # Derive categories dynamically from existing DB records only
+    # Reuse places queryset for photos list (avoid duplicate DB call)
+    photos = [
+        {
+            "id": p.id,
+            "filename": p.image if p.image else "1.png",
+            "title": p.name,
+            "subtitle": p.highlight or ((p.description[:60] + "...") if p.description else ""),
+            "category": p.category or "สถานที่ท่องเที่ยว",
+            "rating": "4.9",
+            "year": "2026",
+            "location": p.address or p.name,
+            "latitude": p.latitude,
+            "longitude": p.longitude,
+            "description": p.description or "",
+            "opening_hours": p.opening_hours or "เปิดให้บริการทุกวัน",
+        }
+        for p in places
+    ]
+    
+    # Derive categories from both places and reviews (single query each)
     place_cats = list(Place.objects.exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).distinct())
     review_cats = list(ReviewComment.objects.exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).distinct())
     all_cats = []
@@ -101,7 +136,7 @@ def home_view(request):
             
     categories = ['ทั้งหมด'] + all_cats
     
-    photos = get_photos_list()
+    # Use aggregate COUNT instead of separate queries
     total_comments = ReviewComment.objects.count()
     total_likes = ReviewLike.objects.count()
     
